@@ -1,0 +1,92 @@
+function ShakeSystem(_lag = 0, _damping = 0, _angle_damping = 1, _spring = 0) constructor {
+	x_shake = 0;
+	x_shake_real = 0;
+	y_shake = 0;
+	y_shake_real = 0;
+	angle_shake = 0;
+	angle_shake_real = 0;
+	angle_damping = _angle_damping;
+	max_shake = undefined;
+	damping = _damping
+	spring = _spring;
+	rounded = false;
+	shake_array = [];
+	lag = _lag;
+	lag_max = _lag;
+	function GenerateShake(_shake) {
+		var mult = (_shake.duration / _shake.max_duration);
+		var amt = _shake.amount * (1+damping);
+		var wiggle = random_range(-amt-sin(current_time / 50*mult)*(spring*mult), amt+sin(current_time / 50*mult)*(spring*mult)) * mult
+		if(rounded){ wiggle = round(wiggle); }
+		return wiggle;
+	}
+	function UpdateShake() {
+		x_shake_real = 0;
+		y_shake_real = 0;
+		angle_shake_real = 0;
+		for (var i = 0; i < array_length(shake_array); i++) {
+			//shake_array[i].Update();
+			
+			shake_array[i].x_shake = GenerateShake(shake_array[i]);
+			shake_array[i].y_shake = GenerateShake(shake_array[i]);
+			
+			x_shake_real += shake_array[i].x_shake;
+			y_shake_real += shake_array[i].y_shake;
+			angle_shake_real += (x_shake_real + y_shake_real) / 2
+			
+			if(max_shake){ y_shake_real = clamp(y_shake_real, -max_shake, max_shake); x_shake_real = clamp(x_shake_real, -max_shake, max_shake); };
+		}
+	}
+	function UpdateArray() {
+		for (var i = 0; i < array_length(shake_array); i++) {
+			shake_array[i].Update();
+			if (shake_array[i].duration <= 0) {
+				array_delete(shake_array, i, 1);
+			}
+		}	
+	}
+	function Update() {
+		if(lag_max = 0){
+			x_shake = x_shake_real;
+			y_shake = y_shake_real;
+			UpdateArray();
+			UpdateShake();
+		} else {
+			lag--
+			UpdateArray();
+			if!(lag) {
+				UpdateShake();
+				lag = lag_max;
+			}
+			angle_shake -= angle_difference(angle_shake, angle_shake_real)/angle_damping
+			x_shake = lerp(x_shake, x_shake_real, damping);
+			y_shake = lerp(y_shake, y_shake_real, damping);
+		}
+	}
+}
+
+function Shake(_amount, _duration, _tag = "", _singleton = false) constructor {
+	amount = _amount;
+	duration = _duration;
+	max_duration = _duration;
+	tag = _tag;
+	singleton = _singleton;
+	x_shake = 0;
+	y_shake = 0;
+	function Update(_system) {
+		if (duration != infinity) {
+			duration -= 1;
+		}
+	}
+	function Add(_system) {
+		if(singleton)and(tag=""){ singleton = false; };
+		if (singleton) {
+			for (var i = 0; i < array_length(_system.shake_array); i++) {
+				if (_system.shake_array[i].tag = tag) {
+					array_delete(_system.shake_array, i, 1)	
+				}
+			}
+		}	
+		array_push(_system.shake_array, new Shake(amount, duration, tag, singleton));
+	}
+}
